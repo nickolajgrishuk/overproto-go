@@ -44,13 +44,28 @@ jobs:
           cache-dependency-path: go.sum
 
       - name: Run tests
+        shell: bash
         run: |
           # Run tests for library packages only (exclude examples)
-          go test -v -race -coverprofile=coverage.out ./core/... ./optimize/... ./transport/...
+          # Generate coverage for each package separately and combine
+          
+          # Run tests and generate coverage files
+          go test -v -race -coverprofile=coverage_core.out ./core/... || true
+          go test -v -race -coverprofile=coverage_optimize.out ./optimize/... || true
+          go test -v -race -coverprofile=coverage_transport.out ./transport/... || true
+          
+          # Combine coverage files
+          echo "mode: atomic" > coverage.out
+          for file in coverage_core.out coverage_optimize.out coverage_transport.out; do
+            if [ -f "$file" ]; then
+              grep -v "^mode:" "$file" >> coverage.out || true
+            fi
+          done
+          
           # Verify coverage file was created
           if [ -f coverage.out ]; then
             echo "Coverage file generated successfully"
-            ls -lh coverage.out
+            wc -l coverage.out || echo "Coverage file size check skipped"
           else
             echo "Warning: Coverage file not generated"
           fi

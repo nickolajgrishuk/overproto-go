@@ -122,28 +122,8 @@ func UDPRecv(conn *net.UDPConn) (*core.PacketHeader, []byte, *net.UDPAddr, error
 
 // UDPGetMTU получает MTU для соединения
 // Пытается через getsockopt, иначе возвращает 1400
+// Реализация зависит от платформы (см. udp_mtu_linux.go и udp_mtu_other.go)
 func UDPGetMTU(conn *net.UDPConn) (uint, error) {
-	// Пытаемся получить MTU через syscall
-	rawConn, err := conn.SyscallConn()
-	if err != nil {
-		return core.FragMTUDefault, nil
-	}
-
-	var mtu int
-	var getErr error
-	err = rawConn.Control(func(fd uintptr) {
-		mtu, getErr = syscall.GetsockoptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_MTU)
-	})
-
-	if err != nil || getErr != nil {
-		// Если не удалось получить, возвращаем значение по умолчанию
-		return core.FragMTUDefault, nil
-	}
-
-	if mtu <= 0 {
-		return core.FragMTUDefault, nil
-	}
-
-	return uint(mtu), nil
+	return getMTU(conn)
 }
 
