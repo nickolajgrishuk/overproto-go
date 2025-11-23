@@ -23,7 +23,8 @@ func initCRC32Table() {
 	poly := uint32(0xEDB88320)
 
 	for i := 0; i < 256; i++ {
-		crc := uint32(i) //nolint:gosec // i всегда в диапазоне 0-255, переполнение невозможно
+		// i всегда в диапазоне 0-255, переполнение невозможно
+		crc, _ := SafeIntToUint32(i) //nolint:errcheck // i гарантированно в диапазоне 0-255
 		for j := 0; j < 8; j++ {
 			if crc&1 != 0 {
 				crc = (crc >> 1) ^ poly

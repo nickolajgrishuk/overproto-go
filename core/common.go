@@ -121,3 +121,20 @@ func SafeUintToUint16(v uint) (uint16, error) {
 	return uint16(v), nil
 }
 
+// SafeUintToInt проверяет, что значение uint помещается в int
+func SafeUintToInt(v uint) (int, error) {
+	const maxInt = int(^uint(0) >> 1) // максимальное значение int
+	if v > uint(maxInt) {
+		return 0, errors.New("value exceeds int max")
+	}
+	return int(v), nil
+}
+
+// SafeIntToUint32 проверяет, что значение int помещается в uint32
+func SafeIntToUint32(v int) (uint32, error) {
+	if v < 0 || v > 4294967295 {
+		return 0, errors.New("value out of uint32 range")
+	}
+	return uint32(v), nil
+}
+

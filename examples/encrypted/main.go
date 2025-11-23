@@ -45,6 +45,9 @@ func main() {
 
 	log.Println("Encryption enabled with AES-256-GCM")
 
+	if *port > 65535 {
+		log.Fatalf("Port %d exceeds maximum value 65535", *port)
+	}
 	if *mode == "server" {
 		runServer(uint16(*port))
 	} else {

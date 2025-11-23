@@ -124,7 +124,11 @@ func TCPRecv(conn *TCPConnection) (*core.PacketHeader, []byte, error) {
 
 		case StateReadingHeader:
 			// Читаем заголовок (24 байта)
-			recvBytesReadInt := int(conn.recvBytesRead)
+			recvBytesReadInt, err := core.SafeUintToInt(conn.recvBytesRead)
+			if err != nil {
+				conn.recvState = StateIdle
+				return nil, nil, errors.New("invalid recvBytesRead")
+			}
 			if recvBytesReadInt < 0 || recvBytesReadInt > core.HeaderSize {
 				conn.recvState = StateIdle
 				return nil, nil, errors.New("invalid recvBytesRead")
@@ -159,7 +163,11 @@ func TCPRecv(conn *TCPConnection) (*core.PacketHeader, []byte, error) {
 			payloadStart := core.HeaderSize
 			payloadEnd := payloadStart + int(payloadLen)
 
-			recvBytesReadInt := int(conn.recvBytesRead)
+			recvBytesReadInt, err := core.SafeUintToInt(conn.recvBytesRead)
+			if err != nil {
+				conn.recvState = StateIdle
+				return nil, nil, errors.New("invalid recvBytesRead")
+			}
 			if recvBytesReadInt < 0 {
 				conn.recvState = StateIdle
 				return nil, nil, errors.New("invalid recvBytesRead")
@@ -187,7 +195,11 @@ func TCPRecv(conn *TCPConnection) (*core.PacketHeader, []byte, error) {
 			crcStart := core.HeaderSize + int(payloadLen)
 			crcEnd := crcStart + 4
 
-			recvBytesReadInt := int(conn.recvBytesRead)
+			recvBytesReadInt, err := core.SafeUintToInt(conn.recvBytesRead)
+			if err != nil {
+				conn.recvState = StateIdle
+				return nil, nil, errors.New("invalid recvBytesRead")
+			}
 			if recvBytesReadInt < 0 {
 				conn.recvState = StateIdle
 				return nil, nil, errors.New("invalid recvBytesRead")

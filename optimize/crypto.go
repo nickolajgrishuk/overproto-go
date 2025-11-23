@@ -101,7 +101,8 @@ func Encrypt(data []byte) ([]byte, []byte, error) {
 
 	// Шифруем данные
 	// Seal автоматически добавляет tag в конец
-	encrypted := gcm.Seal(nil, iv, data, nil)
+	// iv генерируется случайно через rand.Read выше, это не hardcoded значение
+	encrypted := gcm.Seal(nil, iv, data, nil) //nolint:gosec // IV генерируется криптографически стойким способом через rand.Read
 
 	// Формат: [IV 12 bytes] [Encrypted data] [Tag 16 bytes]
 	// Но encrypted уже содержит tag, поэтому просто возвращаем его

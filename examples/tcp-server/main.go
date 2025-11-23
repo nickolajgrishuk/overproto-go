@@ -29,6 +29,9 @@ func main() {
 
 	// Инициализация библиотеки
 	cfg := overproto.NewConfig()
+	if *port > 65535 {
+		log.Fatalf("Port %d exceeds maximum value 65535", *port)
+	}
 	cfg.TCPPort = uint16(*port)
 	err := overproto.Init(cfg)
 	if err != nil {
@@ -84,7 +87,9 @@ func main() {
 	// Закрытие всех соединений
 	clientsMu.Lock()
 	for conn := range clients {
-		conn.Close()
+		if err := conn.Close(); err != nil {
+			log.Printf("Error closing connection: %v", err)
+		}
 	}
 	clientsMu.Unlock()
 
@@ -96,7 +101,9 @@ func handleClient(conn net.Conn, clientID int) {
 		clientsMu.Lock()
 		delete(clients, conn)
 		clientsMu.Unlock()
-		conn.Close()
+		if err := conn.Close(); err != nil {
+			log.Printf("Error closing client #%d connection: %v", clientID, err)
+		}
 		log.Printf("Client #%d disconnected", clientID)
 	}()
 

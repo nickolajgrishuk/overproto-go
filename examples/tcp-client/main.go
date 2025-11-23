@@ -31,6 +31,9 @@ func main() {
 	log.Printf("Connecting to %s:%d...", *host, *port)
 
 	// Подключение к серверу
+	if *port > 65535 {
+		log.Fatalf("Port %d exceeds maximum value 65535", *port)
+	}
 	conn, err := overproto.TCPConnect(*host, uint16(*port))
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)

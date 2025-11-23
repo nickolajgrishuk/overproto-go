@@ -21,6 +21,9 @@ func main() {
 
 	// Инициализация библиотеки
 	cfg := overproto.NewConfig()
+	if *port > 65535 {
+		log.Fatalf("Port %d exceeds maximum value 65535", *port)
+	}
 	cfg.UDPPort = uint16(*port)
 	err := overproto.Init(cfg)
 	if err != nil {
@@ -68,7 +71,10 @@ func main() {
 
 		default:
 			// Устанавливаем timeout для ReadFromUDP
-			conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+			if err := conn.SetReadDeadline(time.Now().Add(1 * time.Second)); err != nil {
+				log.Printf("Failed to set read deadline: %v", err)
+				continue
+			}
 
 			hdr, payload, addr, err := overproto.UDPRecv(conn)
 			if err != nil {
