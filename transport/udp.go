@@ -7,7 +7,7 @@ import (
 	"net"
 	"syscall"
 
-	"overproto-go/core"
+	"github.com/nickolajgrishuk/overproto-go/core"
 )
 
 const (

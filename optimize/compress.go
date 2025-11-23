@@ -6,7 +6,7 @@ import (
 	"errors"
 	"io"
 
-	"overproto-go/core"
+	"github.com/nickolajgrishuk/overproto-go/core"
 )
 
 // Compress сжимает данные через zlib deflate

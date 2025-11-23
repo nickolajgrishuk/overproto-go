@@ -15,7 +15,7 @@ High-performance library for network data transmission in Go with support for TC
 ## Installation
 
 ```bash
-go get overproto-go
+go get github.com/nickolajgrishuk/overproto-go
 ```
 
 ## Quick Start
@@ -27,7 +27,7 @@ package main
 
 import (
 	"log"
-	"overproto-go"
+	"github.com/nickolajgrishuk/overproto-go"
 )
 
 func main() {
@@ -73,9 +73,9 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"overproto-go"
-	"overproto-go/core"
-	"overproto-go/transport"
+	"github.com/nickolajgrishuk/overproto-go"
+	"github.com/nickolajgrishuk/overproto-go/core"
+	"github.com/nickolajgrishuk/overproto-go/transport"
 )
 
 func main() {
@@ -144,7 +144,7 @@ package main
 
 import (
 	"log"
-	"overproto-go"
+	"github.com/nickolajgrishuk/overproto-go"
 )
 
 func main() {
@@ -189,7 +189,7 @@ package main
 import (
 	"crypto/rand"
 	"log"
-	"overproto-go"
+	"github.com/nickolajgrishuk/overproto-go"
 )
 
 func main() {

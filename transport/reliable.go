@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"overproto-go/core"
+	"github.com/nickolajgrishuk/overproto-go/core"
 )
 
 const (

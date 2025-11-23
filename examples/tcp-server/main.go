@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"overproto-go"
+	"github.com/nickolajgrishuk/overproto-go"
 )
 
 var (

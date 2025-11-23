@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"overproto-go/core"
+	"github.com/nickolajgrishuk/overproto-go/core"
 )
 
 // TCPRecvState - состояние state machine для приёма TCP пакетов

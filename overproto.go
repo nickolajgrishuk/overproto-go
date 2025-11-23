@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"overproto-go/core"
-	"overproto-go/optimize"
-	"overproto-go/transport"
+	"github.com/nickolajgrishuk/overproto-go/core"
+	"github.com/nickolajgrishuk/overproto-go/optimize"
+	"github.com/nickolajgrishuk/overproto-go/transport"
 )
 
 // RecvCallback - функция обратного вызова для обработки входящих пакетов
@@ -242,4 +242,3 @@ const (
 	ProtoUDP  = core.ProtoUDP
 	ProtoHTTP = core.ProtoHTTP
 )
-
