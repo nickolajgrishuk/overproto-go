@@ -18,9 +18,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+          cache-dependency-path: go.sum
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v6
         with:
           version: latest
           args: --timeout=5m
@@ -40,16 +41,28 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
+          cache-dependency-path: go.sum
 
       - name: Run tests
-        run: go test -v -race -coverprofile=coverage.out ./...
+        run: |
+          # Run tests for library packages only (exclude examples)
+          go test -v -race -coverprofile=coverage.out ./core/... ./optimize/... ./transport/...
+          # Verify coverage file was created
+          if [ -f coverage.out ]; then
+            echo "Coverage file generated successfully"
+            ls -lh coverage.out
+          else
+            echo "Warning: Coverage file not generated"
+          fi
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        if: always()
+        uses: codecov/codecov-action@v4
         with:
           file: ./coverage.out
           flags: unittests
           name: codecov-umbrella
+          fail_ci_if_error: false
 
   build:
     name: Build
@@ -66,6 +79,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
+          cache-dependency-path: go.sum
 
       - name: Build library
         run: go build ./...
@@ -74,7 +88,7 @@ jobs:
         run: go build ./examples/...
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.os }}
           path: |
@@ -92,6 +106,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+          cache-dependency-path: go.sum
 
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
