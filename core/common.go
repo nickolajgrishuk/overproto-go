@@ -1,5 +1,7 @@
 package core
 
+import "errors"
+
 // Константы протокола
 const (
 	// Magic - уникальная сигнатура протокола
@@ -77,5 +79,45 @@ func NewConfig() *Config {
 		UDPPort: 8080,
 		MTU:     1400,
 	}
+}
+
+// SafeUint16ToUint16 проверяет, что значение uint помещается в uint16
+func SafeUint16ToUint16(v uint) (uint16, error) {
+	if v > 65535 {
+		return 0, errors.New("value exceeds uint16 max")
+	}
+	return uint16(v), nil
+}
+
+// SafeIntToUint16 проверяет, что значение int помещается в uint16
+func SafeIntToUint16(v int) (uint16, error) {
+	if v < 0 || v > 65535 {
+		return 0, errors.New("value out of uint16 range")
+	}
+	return uint16(v), nil
+}
+
+// SafeInt64ToUint32 проверяет, что значение int64 помещается в uint32
+func SafeInt64ToUint32(v int64) (uint32, error) {
+	if v < 0 || v > 4294967295 {
+		return 0, errors.New("value out of uint32 range")
+	}
+	return uint32(v), nil
+}
+
+// SafeIntToUint проверяет, что значение int помещается в uint
+func SafeIntToUint(v int) (uint, error) {
+	if v < 0 {
+		return 0, errors.New("value is negative")
+	}
+	return uint(v), nil
+}
+
+// SafeUintToUint16 проверяет, что значение uint помещается в uint16
+func SafeUintToUint16(v uint) (uint16, error) {
+	if v > 65535 {
+		return 0, errors.New("value exceeds uint16 max")
+	}
+	return uint16(v), nil
 }
 

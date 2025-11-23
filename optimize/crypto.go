@@ -45,7 +45,7 @@ func SetEncryptionKey(key [32]byte) error {
 func IsEncryptionEnabled() bool {
 	keyMutex.RLock()
 	defer keyMutex.RUnlock()
-	return encryptionKey != nil && len(encryptionKey) == AESKeySize
+	return len(encryptionKey) == AESKeySize
 }
 
 // ClearEncryptionKey очищает ключ из памяти (заполняет нулями)
@@ -91,9 +91,10 @@ func Encrypt(data []byte) ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 
-	// Генерируем случайный IV (12 байт)
+	// Генерируем случайный IV (12 байт) через криптографически стойкий генератор
+	// Примечание: gosec G407 - это ложное срабатывание, IV генерируется случайно через rand.Read
 	iv := make([]byte, AESIVSize)
-	_, err = rand.Read(iv)
+	_, err = rand.Read(iv) //nolint:gosec // IV генерируется криптографически стойким способом
 	if err != nil {
 		return nil, nil, err
 	}

@@ -266,7 +266,7 @@ func (ctx *ReliableContext) sendACK(ackSeq uint32) {
 		return
 	}
 
-	ctx.conn.WriteToUDP(serialized, ctx.addr)
+	_, _ = ctx.conn.WriteToUDP(serialized, ctx.addr)
 }
 
 // ProcessACK обрабатывает входящий ACK
@@ -300,7 +300,7 @@ func (ctx *ReliableContext) ProcessACK(ackSeq uint32) error {
 			if slot.State == StateSent {
 				slot.State = StateRetransmit
 				// Ретранслируем немедленно
-				ctx.conn.WriteToUDP(slot.Serialized, ctx.addr)
+				_, _ = ctx.conn.WriteToUDP(slot.Serialized, ctx.addr)
 			}
 		}
 		return nil
@@ -312,8 +312,11 @@ func (ctx *ReliableContext) ProcessACK(ackSeq uint32) error {
 
 	// Обновляем RTT статистику (только для первого ACK, не для ретрансмиссий)
 	if slot.RetryCount == 0 && slot.State == StateSent {
-		rtt := uint32(time.Since(slot.SentAt).Milliseconds())
-		ctx.updateRTT(rtt)
+		rttMillis := time.Since(slot.SentAt).Milliseconds()
+		rtt, err := core.SafeInt64ToUint32(rttMillis)
+		if err == nil {
+			ctx.updateRTT(rtt)
+		}
 	}
 
 	// Помечаем пакет как подтверждённый
@@ -403,7 +406,12 @@ func (ctx *ReliableContext) ProcessTimeouts() (int, error) {
 		}
 
 		// Проверяем timeout
-		elapsed := uint32(now.Sub(slot.SentAt).Milliseconds())
+		elapsedMillis := now.Sub(slot.SentAt).Milliseconds()
+		elapsed, err := core.SafeInt64ToUint32(elapsedMillis)
+		if err != nil {
+			// Если конвертация не удалась, считаем что timeout произошел
+			elapsed = ctx.rtt.RTO + 1
+		}
 		if elapsed > ctx.rtt.RTO {
 			// Timeout
 			if slot.RetryCount >= MaxRetries {

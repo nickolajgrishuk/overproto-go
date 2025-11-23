@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -50,9 +51,9 @@ func TCPListen(port uint16) (net.Listener, error) {
 	lc := net.ListenConfig{
 		Control: func(network, address string, c syscall.RawConn) error {
 			var err error
-			c.Control(func(fd uintptr) {
+			_ = c.Control(func(fd uintptr) {
 				// Устанавливаем SO_REUSEADDR
-				err = syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
+				err = setSockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
 			})
 			return err
 		},
@@ -123,9 +124,14 @@ func TCPRecv(conn *TCPConnection) (*core.PacketHeader, []byte, error) {
 
 		case StateReadingHeader:
 			// Читаем заголовок (24 байта)
-			remaining := core.HeaderSize - int(conn.recvBytesRead)
+			recvBytesReadInt := int(conn.recvBytesRead)
+			if recvBytesReadInt < 0 || recvBytesReadInt > core.HeaderSize {
+				conn.recvState = StateIdle
+				return nil, nil, errors.New("invalid recvBytesRead")
+			}
+			remaining := core.HeaderSize - recvBytesReadInt
 			if remaining > 0 {
-				err := conn.readExact(conn.recvBuffer[int(conn.recvBytesRead):core.HeaderSize])
+				err := conn.readExact(conn.recvBuffer[recvBytesReadInt:core.HeaderSize])
 				if err != nil {
 					conn.recvState = StateIdle
 					return nil, nil, err
@@ -153,14 +159,24 @@ func TCPRecv(conn *TCPConnection) (*core.PacketHeader, []byte, error) {
 			payloadStart := core.HeaderSize
 			payloadEnd := payloadStart + int(payloadLen)
 
-			remaining := payloadEnd - int(conn.recvBytesRead)
+			recvBytesReadInt := int(conn.recvBytesRead)
+			if recvBytesReadInt < 0 {
+				conn.recvState = StateIdle
+				return nil, nil, errors.New("invalid recvBytesRead")
+			}
+			remaining := payloadEnd - recvBytesReadInt
 			if remaining > 0 {
-				err := conn.readExact(conn.recvBuffer[int(conn.recvBytesRead):payloadEnd])
+				err := conn.readExact(conn.recvBuffer[recvBytesReadInt:payloadEnd])
 				if err != nil {
 					conn.recvState = StateIdle
 					return nil, nil, err
 				}
-				conn.recvBytesRead = uint(payloadEnd)
+				payloadEndUint, err := core.SafeIntToUint(payloadEnd)
+				if err != nil {
+					conn.recvState = StateIdle
+					return nil, nil, errors.New("payload end too large")
+				}
+				conn.recvBytesRead = payloadEndUint
 			}
 
 			conn.recvState = StateReadingCRC
@@ -171,14 +187,24 @@ func TCPRecv(conn *TCPConnection) (*core.PacketHeader, []byte, error) {
 			crcStart := core.HeaderSize + int(payloadLen)
 			crcEnd := crcStart + 4
 
-			remaining := crcEnd - int(conn.recvBytesRead)
+			recvBytesReadInt := int(conn.recvBytesRead)
+			if recvBytesReadInt < 0 {
+				conn.recvState = StateIdle
+				return nil, nil, errors.New("invalid recvBytesRead")
+			}
+			remaining := crcEnd - recvBytesReadInt
 			if remaining > 0 {
-				err := conn.readExact(conn.recvBuffer[int(conn.recvBytesRead):crcEnd])
+				err := conn.readExact(conn.recvBuffer[recvBytesReadInt:crcEnd])
 				if err != nil {
 					conn.recvState = StateIdle
 					return nil, nil, err
 				}
-				conn.recvBytesRead = uint(crcEnd)
+				crcEndUint, err := core.SafeIntToUint(crcEnd)
+				if err != nil {
+					conn.recvState = StateIdle
+					return nil, nil, errors.New("crc end too large")
+				}
+				conn.recvBytesRead = crcEndUint
 			}
 
 			conn.recvState = StateReady

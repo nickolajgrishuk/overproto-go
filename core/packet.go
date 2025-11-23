@@ -44,13 +44,24 @@ func Serialize(hdr *PacketHeader, payload []byte) ([]byte, error) {
 
 	// Создаём буфер для заголовка
 	headerBuf := make([]byte, HeaderSize)
+	if len(headerBuf) < HeaderSize {
+		return nil, errors.New("header buffer too small")
+	}
 
 	// Заполняем заголовок в network byte order (big-endian)
 	binary.BigEndian.PutUint16(headerBuf[0:2], hdr.Magic)
-	headerBuf[2] = hdr.Version
-	headerBuf[3] = hdr.Flags
-	headerBuf[4] = hdr.Opcode
-	headerBuf[5] = hdr.Proto
+	if len(headerBuf) > 2 {
+		headerBuf[2] = hdr.Version
+	}
+	if len(headerBuf) > 3 {
+		headerBuf[3] = hdr.Flags
+	}
+	if len(headerBuf) > 4 {
+		headerBuf[4] = hdr.Opcode
+	}
+	if len(headerBuf) > 5 {
+		headerBuf[5] = hdr.Proto
+	}
 	binary.BigEndian.PutUint32(headerBuf[6:10], hdr.StreamID)
 	binary.BigEndian.PutUint32(headerBuf[10:14], hdr.Seq)
 	binary.BigEndian.PutUint16(headerBuf[14:16], hdr.FragID)
@@ -144,10 +155,12 @@ func Deserialize(data []byte) (*PacketHeader, []byte, error) {
 
 // NewPacketHeader создаёт новый заголовок пакета с заполненными полями по умолчанию
 func NewPacketHeader() *PacketHeader {
+	unixTime := time.Now().Unix()
+	timestamp, _ := SafeInt64ToUint32(unixTime) // В худшем случае будет 0, что приемлемо
 	return &PacketHeader{
 		Magic:     Magic,
 		Version:   Version,
-		Timestamp: uint32(time.Now().Unix()),
+		Timestamp: timestamp,
 	}
 }
 

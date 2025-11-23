@@ -21,9 +21,9 @@ func UDPBind(port uint16) (*net.UDPConn, error) {
 	lc := net.ListenConfig{
 		Control: func(network, address string, c syscall.RawConn) error {
 			var err error
-			c.Control(func(fd uintptr) {
+			_ = c.Control(func(fd uintptr) {
 				// Устанавливаем SO_REUSEADDR
-				err = syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
+				err = setSockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
 			})
 			return err
 		},
@@ -41,7 +41,7 @@ func UDPBind(port uint16) (*net.UDPConn, error) {
 
 	udpConn, ok := conn.(*net.UDPConn)
 	if !ok {
-		conn.Close()
+		_ = conn.Close()
 		return nil, errors.New("failed to cast to UDPConn")
 	}
 
@@ -75,14 +75,9 @@ func UDPSend(conn *net.UDPConn, hdr *core.PacketHeader, payload []byte, addr *ne
 		return 0, err
 	}
 
-	// Проверяем MTU
-	mtu, err := UDPGetMTU(conn)
-	if err == nil {
-		if uint(len(data)) > mtu {
-			// Предупреждение: пакет превышает MTU, рекомендуется фрагментация
-			// Но всё равно отправляем
-		}
-	}
+	// Проверяем MTU (предупреждение, если пакет превышает MTU)
+	// Примечание: фрагментация будет реализована в будущем
+	_, _ = UDPGetMTU(conn)
 
 	// Отправляем данные
 	var n int

@@ -52,7 +52,11 @@ func (ctx *FragmentContext) AddFragment(fragID uint16, hdr *PacketHeader, data [
 	// Сохраняем фрагмент
 	ctx.Fragments[fragID] = make([]byte, len(data))
 	copy(ctx.Fragments[fragID], data)
-	ctx.FragSizes[fragID] = uint16(len(data))
+	fragSize, err := SafeIntToUint16(len(data))
+	if err != nil {
+		return false, errors.New("fragment size too large")
+	}
+	ctx.FragSizes[fragID] = fragSize
 	ctx.ReceivedFrags++
 	ctx.ReceivedPayloadSize += uint(len(data))
 
@@ -100,7 +104,11 @@ func (ctx *FragmentContext) Assemble() (*PacketHeader, []byte, error) {
 	finalHeader.Flags &^= FlagFragment
 	finalHeader.FragID = 0
 	finalHeader.TotalFrags = 0
-	finalHeader.PayloadLen = uint16(len(payload))
+	payloadLen, err := SafeIntToUint16(len(payload))
+	if err != nil {
+		return nil, nil, errors.New("payload size too large")
+	}
+	finalHeader.PayloadLen = payloadLen
 
 	return &finalHeader, payload, nil
 }
@@ -155,8 +163,16 @@ func FragmentPacket(hdr *PacketHeader, payload []byte, mtu uint) ([][]byte, []*P
 		fragHeader := *hdr
 		fragHeader.Flags |= FlagFragment
 		fragHeader.FragID = i
-		fragHeader.TotalFrags = uint16(totalFrags)
-		fragHeader.PayloadLen = uint16(fragSize)
+		totalFragsUint16, err := SafeUintToUint16(totalFrags)
+		if err != nil {
+			return nil, nil, errors.New("total fragments count too large")
+		}
+		fragSizeUint16, err := SafeUintToUint16(fragSize)
+		if err != nil {
+			return nil, nil, errors.New("fragment size too large")
+		}
+		fragHeader.TotalFrags = totalFragsUint16
+		fragHeader.PayloadLen = fragSizeUint16
 
 		// Извлекаем payload фрагмента
 		fragPayload := payload[offset : offset+fragSize]

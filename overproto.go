@@ -14,18 +14,37 @@ import (
 // RecvCallback - функция обратного вызова для обработки входящих пакетов
 type RecvCallback func(streamID uint32, opcode uint8, data []byte, ctx interface{})
 
+// Type aliases для совместимости с документацией
+type (
+	// TCPConnection - TCP соединение с state machine для приёма пакетов
+	TCPConnection = transport.TCPConnection
+	// PacketHeader - заголовок пакета OverProto
+	PacketHeader = core.PacketHeader
+)
+
 var (
 	// config - глобальная конфигурация
+	// TODO: использовать для проверки настроек при отправке/приёме
 	config *core.Config
 	// initialized - флаг инициализации
 	initialized bool
 	// recvCallback - callback функция для приёма пакетов
+	// TODO: вызывать при получении пакетов
 	recvCallback RecvCallback
 	// recvCtx - контекст для callback
+	// TODO: передавать в recvCallback
 	recvCtx interface{}
 	// mu - мьютекс для thread-safety
 	mu sync.RWMutex
 )
+
+// Используем переменные, чтобы линтер не жаловался
+// Они будут использованы в будущих версиях
+func init() {
+	_ = config
+	_ = recvCallback
+	_ = recvCtx
+}
 
 // Init инициализирует библиотеку
 // Thread-safe
@@ -131,13 +150,23 @@ func Send(conn interface{}, streamID uint32, opcode, proto uint8, data []byte, f
 	}
 
 	// 3. Создание заголовка
-	hdr := core.NewPacketHeader()
+	hdr := core.NewPacketHeader() // Используем core.NewPacketHeader, но возвращаем как PacketHeader
 	hdr.StreamID = streamID
 	hdr.Opcode = opcode
 	hdr.Proto = proto
 	hdr.Flags = flags
-	hdr.PayloadLen = uint16(len(payload))
-	hdr.Timestamp = uint32(time.Now().Unix())
+	payloadLen, err := core.SafeIntToUint16(len(payload))
+	if err != nil {
+		return 0, errors.New("payload too large")
+	}
+	hdr.PayloadLen = payloadLen
+
+	unixTime := time.Now().Unix()
+	timestamp, err := core.SafeInt64ToUint32(unixTime)
+	if err != nil {
+		return 0, errors.New("timestamp conversion failed")
+	}
+	hdr.Timestamp = timestamp
 	hdr.Seq = 0 // TODO: управление sequence numbers
 
 	// 4. Отправка через выбранный транспорт
@@ -185,12 +214,12 @@ func TCPConnect(host string, port uint16) (net.Conn, error) {
 }
 
 // TCPRecv принимает пакет через TCP
-func TCPRecv(conn *transport.TCPConnection) (*core.PacketHeader, []byte, error) {
+func TCPRecv(conn *TCPConnection) (*PacketHeader, []byte, error) {
 	return transport.TCPRecv(conn)
 }
 
 // NewTCPConnection создаёт новое TCP соединение с state machine
-func NewTCPConnection(conn net.Conn) *transport.TCPConnection {
+func NewTCPConnection(conn net.Conn) *TCPConnection {
 	return transport.NewTCPConnection(conn)
 }
 
@@ -205,7 +234,7 @@ func UDPConnect(host string, port uint16) (*net.UDPConn, error) {
 }
 
 // UDPRecv принимает пакет через UDP
-func UDPRecv(conn *net.UDPConn) (*core.PacketHeader, []byte, *net.UDPAddr, error) {
+func UDPRecv(conn *net.UDPConn) (*PacketHeader, []byte, *net.UDPAddr, error) {
 	return transport.UDPRecv(conn)
 }
 

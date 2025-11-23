@@ -28,7 +28,7 @@ func Compress(data []byte) ([]byte, error) {
 	// Записываем данные
 	_, err = writer.Write(data)
 	if err != nil {
-		writer.Close()
+		_ = writer.Close()
 		return nil, err
 	}
 
@@ -71,10 +71,18 @@ func Decompress(data []byte) ([]byte, error) {
 	var result bytes.Buffer
 	result.Grow(bufSize)
 
-	// Распаковываем данные
-	_, err = io.Copy(&result, reader)
+	// Распаковываем данные с защитой от decompression bomb
+	// Максимальный размер декомпрессированных данных: 10MB
+	const maxDecompressedSize = 10 * 1024 * 1024
+	limitedReader := io.LimitReader(reader, maxDecompressedSize)
+	_, err = io.Copy(&result, limitedReader)
 	if err != nil {
 		return nil, err
+	}
+	
+	// Проверяем, не превышен ли лимит
+	if result.Len() >= maxDecompressedSize {
+		return nil, errors.New("decompressed data too large (potential decompression bomb)")
 	}
 
 	return result.Bytes(), nil
