@@ -34,7 +34,7 @@ jobs:
           ls -la examples/*/main 2>/dev/null || echo "No binaries found (expected on some platforms)"
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: deploy-artifacts
           path: |

@@ -74,7 +74,7 @@ jobs:
         run: go build ./examples/...
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: build-${{ matrix.os }}
           path: |
