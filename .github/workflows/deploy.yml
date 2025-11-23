@@ -1,0 +1,44 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Build
+        run: go build ./...
+
+      - name: Build examples
+        run: go build ./examples/...
+
+      - name: Check build artifacts
+        run: |
+          echo "Checking build artifacts..."
+          ls -la examples/*/main 2>/dev/null || echo "No binaries found (expected on some platforms)"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: deploy-artifacts
+          path: |
+            examples/*/main
+            examples/*/*.exe
+          retention-days: 30
+
